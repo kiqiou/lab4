@@ -1,80 +1,79 @@
-const { NotImplementedError } = require("../extensions/index.js");
+class BitStorage {
+  constructor(size) {
+    this.bits = new Array(size).fill(false);
+  }
+  getValue(pos) {
+    return this.bits[pos];
+  }
+  setValue(pos, val) {
+    // Поддерживаем оба варианта: setValue(i) и setValue(i, true)
+    if (typeof val === 'undefined') {
+      this.bits[pos] = true;
+    } else {
+      this.bits[pos] = val;
+    }
+  }
+}
 
 module.exports = class BloomFilter {
-  /**
-   * @param {number} size - the size of the storage.
-   */
-  constructor() {
-    // Bloom filter size directly affects the likelihood of false positives.
-    // The bigger the size the lower the likelihood of false positives.
+  constructor(size = 100) {
+    this.size = size;
+    this.storage = this.createStore(this.size);
   }
 
-  /**
-   * @param {string} item
-   */
-  insert(/* item */) {
-    throw new NotImplementedError("Not implemented");
-    // remove line with error and write your code here
+  createStore(size) {
+    return new BitStorage(size);
   }
 
-  /**
-   * @param {string} item
-   * @return {boolean}
-   */
-  mayContain(/* item */) {
-    throw new NotImplementedError("Not implemented");
-    // remove line with error and write your code here
+  // hash1: variant of djb-like starting from 0, coerce to 32-bit and abs inside loop
+  hash1(item) {
+    let hash = 0;
+    for (let i = 0; i < item.length; i++) {
+      const char = item.charCodeAt(i);
+      hash = (hash << 5) + hash + char; // hash * 33 + char
+      hash &= hash;                     // coerce to 32-bit signed int
+      hash = Math.abs(hash);            // keep positive (as in tests)
+    }
+    return hash % this.size;
   }
 
-  /**
-   * Creates the data store for our filter.
-   * We use this method to generate the store in order to
-   * encapsulate the data itself and only provide access
-   * to the necessary methods.
-   *
-   * @param {number} size
-   * @return {Object}
-   */
-  createStore(/* size */) {
-    throw new NotImplementedError("Not implemented");
-    // remove line with error and write your code here
+  // hash2: true djb2 (seed 5381), coerce to 32-bit per iteration, abs at the end
+  hash2(item) {
+    let hash = 5381;
+    for (let i = 0; i < item.length; i++) {
+      const char = item.charCodeAt(i);
+      hash = (hash << 5) + hash + char; // hash * 33 + char
+      hash &= hash;                     // coerce to 32-bit signed int
+    }
+    return Math.abs(hash % this.size);
   }
 
-  /**
-   * @param {string} item
-   * @return {number}
-   */
-  hash1(/* item */) {
-    throw new NotImplementedError("Not implemented");
-    // remove line with error and write your code here
+  // hash3: 31-multiplier variant, coerce to 32-bit and abs inside loop
+  hash3(item) {
+    let hash = 0;
+    for (let i = 0; i < item.length; i++) {
+      const char = item.charCodeAt(i);
+      hash = (hash << 5) - hash + char; // hash * 31 + char
+      hash &= hash;                     // coerce to 32-bit signed int
+      hash = Math.abs(hash);
+    }
+    return hash % this.size;
   }
 
-  /**
-   * @param {string} item
-   * @return {number}
-   */
-  hash2(/* item */) {
-    throw new NotImplementedError("Not implemented");
-    // remove line with error and write your code here
+  getHashValues(item) {
+    return [this.hash1(item), this.hash2(item), this.hash3(item)];
   }
 
-  /**
-   * @param {string} item
-   * @return {number}
-   */
-  hash3(/* item */) {
-    throw new NotImplementedError("Not implemented");
-    // remove line with error and write your code here
+  insert(item) {
+    this.getHashValues(item).forEach(pos => {
+      // setValue поддерживает и setValue(i) и setValue(i, true)
+      this.storage.setValue(pos % this.size, true);
+    });
   }
 
-  /**
-   * Runs all 3 hash functions on the input and returns an array of results.
-   *
-   * @param {string} item
-   * @return {number[]}
-   */
-  getHashValues(/* item */) {
-    throw new NotImplementedError("Not implemented");
-    // remove line with error and write your code here
+  mayContain(item) {
+    return this.getHashValues(item).every(
+      pos => this.storage.getValue(pos % this.size)
+    );
   }
 };
