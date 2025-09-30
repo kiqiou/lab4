@@ -14,11 +14,9 @@ module.exports = class Queue {
   enqueue(value) {
     const newNode = new ListNode(value);
     if (!this.head) {
-      // Если очередь пустая
       this.head = newNode;
       this.tail = newNode;
     } else {
-      // Добавляем в конец, обновляем хвост
       this.tail.next = newNode;
       this.tail = newNode;
     }
@@ -29,7 +27,6 @@ module.exports = class Queue {
     const value = this.head.value;
     this.head = this.head.next;
     if (!this.head) {
-      // Если после удаления очередь пустая, сбрасываем хвост
       this.tail = null;
     }
     return value;

@@ -61,7 +61,7 @@ module.exports = class BinarySearchTree {
       } else if (data > node.data) {
         node.right = removeNode(node.right, data);
         return node;
-      } else { // data === node.data, remove this node
+      } else { 
         if (!node.left && !node.right) {
           return null;
         }
@@ -72,7 +72,6 @@ module.exports = class BinarySearchTree {
           return node.left;
         }
 
-        // Node with two children: get the min from right subtree
         let minRight = node.right;
         while (minRight.left) {
           minRight = minRight.left;
